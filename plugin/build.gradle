@@ -1,0 +1,28 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+}
+
+
+uploadArchives { //当前项目可以发布到本地文件夹中
+    repositories {
+        mavenDeployer {
+            repository(url: uri('../repo')) //定义本地maven仓库的地址
+            //groupId
+            pom.groupId = 'com.demon.plugin'
+
+            //artifactId
+            pom.artifactId = 'plugin'
+
+            //插件版本号
+            pom.version = '1.0.0'
+        }
+    }
+}
