@@ -55,6 +55,7 @@ gradle.taskGraph.beforeTask { task ->
     if (task.name.contains('mergeDebugResources')) {
         println('mergeDebugResources info: ' + task)
         if (task != null) {
+
             if (!project.buildDir.exists()) {
                 project.buildDir.mkdir()
             }
@@ -64,7 +65,7 @@ gradle.taskGraph.beforeTask { task ->
             project.extensions.getByName('android').applicationVariants.all { variant ->
                 def name = "${variant.name}CompileClasspath"
                 println(name + " dependencies")
-                Configuration configuration = project.configurations.getByName(name)
+                org.gradle.api.artifacts.Configuration configuration = project.configurations.getByName(name)
                 configuration.getIncoming().files.each { dependency ->
                     if (dependency.getName().endsWith(".aar")) {
                         println("dependency: " + dependency.getAbsolutePath())

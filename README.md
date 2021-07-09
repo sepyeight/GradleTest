@@ -167,12 +167,27 @@ project.task(SAVE_PERMISSIONS) {
 
    ![image-20210708173310625](images/image-20210708173310625.png)
 
-## 0709更新
+## 20210709更新
 
 为了简化配置，更新代码与配置
 
 ```groovy
-# 在项目app的build.gradle末尾添加如下代码，然后编译dubug版app，编译完成后，在app/build下面会产生文件输出
+# 确保你的项目是可编译的，只需要在项目app的build.gradle末尾添加如下代码，然后编译dubug版app，编译完成后，在app/build下面会产生文件输出
+# 也可使用命令 gradlew -q mergeDebugResources
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import org.w3c.dom.Node
+import org.w3c.dom.NodeList
+
+import javax.xml.parsers.DocumentBuilder
+import javax.xml.parsers.DocumentBuilderFactory
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+
+......
+......
+
+
 gradle.taskGraph.beforeTask { task ->
     if (task.name.contains('mergeDebugResources')) {
         println('mergeDebugResources info: ' + task)
