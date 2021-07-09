@@ -167,6 +167,104 @@ project.task(SAVE_PERMISSIONS) {
 
    ![image-20210708173310625](images/image-20210708173310625.png)
 
+## 0709更新
+
+为了简化配置，更新代码与配置
+
+```groovy
+# 在项目app的build.gradle末尾添加如下代码，然后编译dubug版app，编译完成后，在app/build下面会产生文件输出
+gradle.taskGraph.beforeTask { task ->
+    if (task.name.contains('mergeDebugResources')) {
+        println('mergeDebugResources info: ' + task)
+        if (task != null) {
+
+            if (!project.buildDir.exists()) {
+                project.buildDir.mkdir()
+            }
+            String saveFilePath = project.buildDir.getAbsolutePath() + "/permission_collection.csv"
+            println('persmission file save path: ' + saveFilePath)
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(saveFilePath))
+            project.extensions.getByName('android').applicationVariants.all { variant ->
+                def name = "${variant.name}CompileClasspath"
+                println(name + " dependencies")
+                org.gradle.api.artifacts.Configuration configuration = project.configurations.getByName(name)
+                configuration.getIncoming().files.each { dependency ->
+                    if (dependency.getName().endsWith(".aar")) {
+                        println("dependency: " + dependency.getAbsolutePath())
+                        ZipFile zipFile = new ZipFile(dependency)
+                        Enumeration<?> entries = zipFile.entries()
+                        String folder = System.getProperty("java.io.tmpdir");
+                        File cache = new File(folder, 'xmlcache')
+                        if (!cache.isDirectory() || !cache.exists()) {
+                            cache.mkdir()
+                        }
+                        while (entries.hasMoreElements()) {
+                            ZipEntry entry = entries.nextElement()
+                            if (entry.getName().equalsIgnoreCase('AndroidManifest.xml')) {
+                                File xmlFile = new File(cache, entry.getName())
+                                if (xmlFile.exists()) {
+                                    xmlFile.delete()
+                                }
+                                InputStream is = zipFile.getInputStream(entry)
+                                FileOutputStream fos = new FileOutputStream(xmlFile)
+                                int len;
+                                byte[] buf = new byte[1024];
+                                while ((len = is.read(buf)) != -1) {
+                                    fos.write(buf, 0, len);
+                                    buf = new byte[1024]
+                                }
+                                // 关流顺序，先打开的后关闭
+                                fos.close()
+                                is.close()
+
+                                List<String> permissionList = new ArrayList<>();
+                                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance()
+                                try {
+                                    DocumentBuilder builder = factory.newDocumentBuilder();
+                                    Document d = builder.parse(xmlFile);
+                                    NodeList manifestNodeList = d.getElementsByTagName("manifest");
+                                    for (int i = 0; i < manifestNodeList.getLength(); i++) {
+                                        Node sonNode = manifestNodeList.item(i);
+                                        NodeList grandSonNodeList = sonNode.getChildNodes();
+                                        for (int j = 0; j < grandSonNodeList.getLength(); j++) {
+                                            Node grandSonNode = grandSonNodeList.item(j);
+                                            if (grandSonNode.getNodeType() == Node.ELEMENT_NODE) {
+                                                if (grandSonNode.getNodeName().toLowerCase().contains("uses-permission")) {
+                                                    Element en = (Element) grandSonNode;
+                                                    String value = en.getAttribute("android:name");
+                                                    permissionList.add(value)
+                                                    System.out.println(grandSonNode.getNodeName() + ": " + value);
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    println('error msg: ' + e.getMessage())
+                                }
+
+                                //写入已经打开的文件
+                                if (permissionList.size() != 0) {
+                                    bufferedWriter.write(dependency.getAbsolutePath())
+                                    bufferedWriter.write(',')
+                                    for (String permission : permissionList) {
+                                        bufferedWriter.write(permission)
+                                        bufferedWriter.write(',')
+                                    }
+                                    bufferedWriter.write('\n')
+                                }
+                                xmlFile.delete()
+                            }
+                        }
+                    }
+                }
+            }
+            bufferedWriter.close()
+        }
+    }
+
+}
+```
+
 
 
 

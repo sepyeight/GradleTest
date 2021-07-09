@@ -49,6 +49,9 @@ class ApkDepScanPlugin implements Plugin<Project> {
         project.task(SAVE_PERMISSIONS) {
             doFirst {
                 String saveFilePath = project.buildDir.getAbsolutePath() + "/permission_collection.csv"
+                if (!project.buildDir.exists()) {
+                    project.buildDir.mkdir()
+                }
                 println('persmission file save path: ' + saveFilePath)
                 BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(saveFilePath))
                 project.extensions.getByName('android').applicationVariants.all { variant ->
